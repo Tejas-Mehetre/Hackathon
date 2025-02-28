@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ChatHistory from "./chatHistory";
+import ChatHistory from "./ChatHistory";
 import axios from "axios";
 
 const Chatbot = () => {
@@ -23,20 +23,15 @@ const Chatbot = () => {
 
     const userMessage = { text: input, sender: "user" };
     setMessages((prev) => [...prev, userMessage]);
-
     setLoading(true);
 
     try {
       const response = await axios.post("http://localhost:3000/model/getmodelResponse", { query: input });
-
       const data = response.data;
       const employees = data.allFilteredData.response.response.map(emp => emp.EmployeeName);
-
-      // Ensure the response is displayed as a list
       const botMessage = { text: employees, sender: "bot" };
 
       setMessages((prev) => [...prev, botMessage]);
-
       saveChatHistory(userMessage, botMessage);
     } catch (error) {
       console.error("Error fetching response:", error);
@@ -69,14 +64,8 @@ const Chatbot = () => {
   };
 
   const handleNewChat = () => {
-    if (messages.length > 0) {
-      const firstMessage = messages.find((msg) => msg.sender === "user")?.text || "Untitled Chat";
-      const newChat = { id: Date.now(), title: firstMessage.slice(0, 20), messages: [...messages] };
-
-      setHistory((prev) => [...prev, newChat]);
-      setMessages([]);
-      setCurrentChatId(null);
-    }
+    setMessages([]);
+    setCurrentChatId(null);
   };
 
   const deleteChat = (id) => {
@@ -90,24 +79,17 @@ const Chatbot = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar - Chat History */}
-      <ChatHistory
-        history={history}
-        loadChat={loadChat}  // ✅ Pass correct function
-        handleNewChat={handleNewChat}
-        deleteChat={deleteChat}
-      />
+    <div className="flex h-screen bg-gray-900 text-white">
+      <ChatHistory history={history} loadChat={loadChat} handleNewChat={handleNewChat} deleteChat={deleteChat} />
 
-      {/* Main Chat Section */}
-      <div className="w-3/4 flex flex-col justify-between h-full p-4 bg-white shadow-lg">
-        {/* Chat Display */}
-        <div className="flex-1 overflow-y-auto p-4 border rounded bg-gray-50">
+      <div className="w-3/4 flex flex-col justify-between h-full p-6 bg-gray-800 shadow-lg rounded-lg">
+        <div className="flex-1 overflow-y-auto p-4 border rounded bg-gray-700 shadow-inner">
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`p-3 my-2 rounded-lg max-w-lg ${msg.sender === "user" ? "bg-blue-500 text-white ml-auto" : "bg-gray-300 text-black"
-                }`}
+              className={`p-3 my-2 rounded-xl max-w-lg text-sm font-medium shadow-md ${
+                msg.sender === "user" ? "bg-blue-600 text-white ml-auto" : "bg-gray-600 text-gray-200"
+              }`}
             >
               {Array.isArray(msg.text) ? (
                 <ul className="list-disc pl-5">
@@ -120,20 +102,19 @@ const Chatbot = () => {
               )}
             </div>
           ))}
-          {loading && <p className="text-gray-500">Typing...</p>}
+          {loading && <p className="text-gray-400">Typing...</p>}
         </div>
 
-        {/* Input Area */}
-        <div className="flex mt-2">
+        <div className="flex mt-4">
           <input
             type="text"
-            className="flex-1 p-3 border rounded"
+            className="flex-1 p-3 border border-gray-600 rounded-lg bg-gray-700 text-white focus:ring-2 focus:ring-blue-500"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Ask something..."
+            placeholder="Type your message..."
           />
-          <button className="ml-2 p-3 bg-blue-500 text-white rounded" onClick={handleSend}>
+          <button className="ml-3 p-3 bg-blue-500 text-white rounded-lg shadow-lg hover:bg-blue-600" onClick={handleSend}>
             Send
           </button>
         </div>
