@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import ChatHistory from "./chatHistory";
-import axios from "axios"
+import axios from "axios";
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([]);
@@ -29,14 +29,17 @@ const Chatbot = () => {
     try {
       const response = await axios.post("http://localhost:3000/model/getmodelResponse", { question: input });
 
-      const data = await response.json();
-      const botMessage = { text: data.response, sender: "bot" };
+      // Extract only employee names from response
+      const employees = response.data?.allFilteredData?.response?.response?.map(emp => emp.EmployeeName) || [];
+      const botMessageText = employees.length ? employees.join(", ") : "No employees found.";
+
+      const botMessage = { text: botMessageText, sender: "bot" };
 
       setMessages((prev) => [...prev, botMessage]);
-
       saveChatHistory(userMessage, botMessage);
     } catch (error) {
       console.error("Error fetching response:", error);
+      setMessages((prev) => [...prev, { text: "Error fetching response.", sender: "bot" }]);
     }
 
     setLoading(false);
@@ -98,8 +101,9 @@ const Chatbot = () => {
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`p-3 my-2 rounded-lg max-w-lg ${msg.sender === "user" ? "bg-blue-500 text-white ml-auto" : "bg-gray-300 text-black"
-                }`}
+              className={`p-3 my-2 rounded-lg max-w-lg ${
+                msg.sender === "user" ? "bg-blue-500 text-white ml-auto" : "bg-gray-300 text-black"
+              }`}
             >
               {msg.text}
             </div>
