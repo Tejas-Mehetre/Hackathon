@@ -92,7 +92,12 @@ const Chatbot = () => {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar - Chat History */}
-      <ChatHistory history={history} loadChat={loadChat} handleNewChat={handleNewChat} deleteChat={deleteChat} />
+      <ChatHistory
+        history={history}
+        loadChat={loadChat}  // ✅ Pass correct function
+        handleNewChat={handleNewChat}
+        deleteChat={deleteChat}
+      />
 
       {/* Main Chat Section */}
       <div className="w-3/4 flex flex-col justify-between h-full p-4 bg-white shadow-lg">
@@ -101,9 +106,8 @@ const Chatbot = () => {
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`p-3 my-2 rounded-lg max-w-lg ${
-                msg.sender === "user" ? "bg-blue-500 text-white ml-auto" : "bg-gray-300 text-black"
-              }`}
+              className={`p-3 my-2 rounded-lg max-w-lg ${msg.sender === "user" ? "bg-blue-500 text-white ml-auto" : "bg-gray-300 text-black"
+                }`}
             >
               {Array.isArray(msg.text) ? (
                 <ul className="list-disc pl-5">
