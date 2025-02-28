@@ -1,10 +1,22 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import ChatHistory from "./chatHistory";
+import axios from "axios"
 
 const Chatbot = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
+
+  useEffect(() => {
+    const storedHistory = JSON.parse(localStorage.getItem("chatHistory")) || [];
+    setHistory(storedHistory);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chatHistory", JSON.stringify(history));
+  }, [history]);
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -15,16 +27,14 @@ const Chatbot = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("https://your-backend-api.com/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: input }),
-      });
+      const response = await axios.post("http://localhost:3000/model/getmodelResponse", { question: input });
 
       const data = await response.json();
       const botMessage = { text: data.response, sender: "bot" };
 
       setMessages((prev) => [...prev, botMessage]);
+
+      saveChatHistory(userMessage, botMessage);
     } catch (error) {
       console.error("Error fetching response:", error);
     }
@@ -33,40 +43,53 @@ const Chatbot = () => {
     setInput("");
   };
 
-  // Save conversation history when user starts a new chat
+  const saveChatHistory = (userMessage, botMessage) => {
+    let updatedHistory = [...history];
+
+    if (currentChatId) {
+      updatedHistory = updatedHistory.map((chat) =>
+        chat.id === currentChatId
+          ? { ...chat, messages: [...chat.messages, userMessage, botMessage] }
+          : chat
+      );
+    } else {
+      const newChat = {
+        id: Date.now(),
+        title: userMessage.text.slice(0, 20),
+        messages: [userMessage, botMessage],
+      };
+      updatedHistory.push(newChat);
+      setCurrentChatId(newChat.id);
+    }
+
+    setHistory(updatedHistory);
+  };
+
   const handleNewChat = () => {
     if (messages.length > 0) {
-      setHistory((prev) => [
-        ...prev,
-        { id: Date.now(), messages: messages.slice() },
-      ]);
+      const firstMessage = messages.find((msg) => msg.sender === "user")?.text || "Untitled Chat";
+      const newChat = { id: Date.now(), title: firstMessage.slice(0, 20), messages: [...messages] };
+
+      setHistory((prev) => [...prev, newChat]);
       setMessages([]);
+      setCurrentChatId(null);
     }
+  };
+
+  const deleteChat = (id) => {
+    setHistory((prev) => prev.filter((chat) => chat.id !== id));
+  };
+
+  const loadChat = (id) => {
+    const selectedChat = history.find((chat) => chat.id === id);
+    setMessages(selectedChat?.messages || []);
+    setCurrentChatId(id);
   };
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar for Chat History */}
-      <div className="w-1/4 bg-gray-800 text-white p-4 overflow-y-auto">
-        <h2 className="text-xl font-semibold mb-4">Chat History</h2>
-        <button
-          className="w-full bg-blue-500 text-white py-2 mb-4 rounded"
-          onClick={handleNewChat}
-        >
-          + New Chat
-        </button>
-        <div className="space-y-2">
-          {history.map((session, index) => (
-            <div
-              key={session.id}
-              className="p-2 bg-gray-700 rounded cursor-pointer hover:bg-gray-600"
-              onClick={() => setMessages(session.messages)}
-            >
-              Chat {index + 1}
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Sidebar - Chat History */}
+      <ChatHistory history={history} loadChat={loadChat} handleNewChat={handleNewChat} deleteChat={deleteChat} />
 
       {/* Main Chat Section */}
       <div className="w-3/4 flex flex-col justify-between h-full p-4 bg-white shadow-lg">
@@ -75,11 +98,8 @@ const Chatbot = () => {
           {messages.map((msg, index) => (
             <div
               key={index}
-              className={`p-3 my-2 rounded-lg max-w-lg ${
-                msg.sender === "user"
-                  ? "bg-blue-500 text-white ml-auto"
-                  : "bg-gray-300 text-black"
-              }`}
+              className={`p-3 my-2 rounded-lg max-w-lg ${msg.sender === "user" ? "bg-blue-500 text-white ml-auto" : "bg-gray-300 text-black"
+                }`}
             >
               {msg.text}
             </div>
@@ -97,10 +117,7 @@ const Chatbot = () => {
             onKeyDown={(e) => e.key === "Enter" && handleSend()}
             placeholder="Ask something..."
           />
-          <button
-            className="ml-2 p-3 bg-blue-500 text-white rounded"
-            onClick={handleSend}
-          >
+          <button className="ml-2 p-3 bg-blue-500 text-white rounded" onClick={handleSend}>
             Send
           </button>
         </div>
