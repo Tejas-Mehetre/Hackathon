@@ -27,19 +27,19 @@ const Chatbot = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post("http://localhost:3000/model/getmodelResponse", { question: input });
+      const response = await axios.post("http://localhost:3000/model/getmodelResponse", { query: input });
 
-      // Extract only employee names from response
-      const employees = response.data?.allFilteredData?.response?.response?.map(emp => emp.EmployeeName) || [];
-      const botMessageText = employees.length ? employees.join(", ") : "No employees found.";
+      const data = response.data;
+      const employees = data.allFilteredData.response.response.map(emp => emp.EmployeeName);
 
-      const botMessage = { text: botMessageText, sender: "bot" };
+      // Ensure the response is displayed as a list
+      const botMessage = { text: employees, sender: "bot" };
 
       setMessages((prev) => [...prev, botMessage]);
+
       saveChatHistory(userMessage, botMessage);
     } catch (error) {
       console.error("Error fetching response:", error);
-      setMessages((prev) => [...prev, { text: "Error fetching response.", sender: "bot" }]);
     }
 
     setLoading(false);
@@ -105,7 +105,15 @@ const Chatbot = () => {
                 msg.sender === "user" ? "bg-blue-500 text-white ml-auto" : "bg-gray-300 text-black"
               }`}
             >
-              {msg.text}
+              {Array.isArray(msg.text) ? (
+                <ul className="list-disc pl-5">
+                  {msg.text.map((name, i) => (
+                    <li key={i}>{name}</li>
+                  ))}
+                </ul>
+              ) : (
+                msg.text
+              )}
             </div>
           ))}
           {loading && <p className="text-gray-500">Typing...</p>}
